@@ -1,0 +1,31 @@
+# POST http://127.0.0.1:8000/auth/token/login/ HTTP/1.1
+# content-type: application/json
+
+# {"username": "nikki","password":"loki45"}
+
+
+# POST http://127.0.0.1:8000/auth/token/login/ HTTP/1.1
+# content-type: application/json
+
+# {"username": "denisov","password":"loki45"}
+
+
+# GET http://127.0.0.1:8000/api/v1/task/ HTTP/1.1
+# Content-Type: application/json
+# Authorization: token 3748ee9920e181bc0cb53d4f1ab9b459497121ed
+
+
+#post request to add comment
+# POST http://127.0.0.1:8000/api/v1/task/3/comment/ HTTP/1.1
+# Content-Type: application/json
+# Authorization: token 3748ee9920e181bc0cb53d4f1ab9b459497121ed
+
+# {
+#     "body": "yo-ho-ho",
+#     "answer_to": 24
+# }
+
+
+GET http://127.0.0.1:8000/auth/users/me HTTP/1.1
+Content-Type: application/json
+Authorization: token 6d172e01f94130f454efe585c4f7e401b7565685
