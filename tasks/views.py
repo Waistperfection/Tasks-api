@@ -1,6 +1,4 @@
-from pprint import pprint
 from typing import Any
-from django import http
 from rest_framework import viewsets
 from rest_framework import generics
 from rest_framework import routers
@@ -8,11 +6,10 @@ from rest_framework.response import Response
 from django.db.models import Q
 from rest_framework.decorators import action
 from django.utils import timezone
-from .permissions import TaskPermission
 
+from .permissions import TaskPermission
 from .serializers import TaskListSerializer, TaskDetailSerializer, TaskCommentSerializer
 from .models import Task, TaskComment
-from accounts.models import User
 
 # router = routers.SimpleRouter()
 router = routers.DefaultRouter()
@@ -23,26 +20,32 @@ class TaskViewSet(viewsets.ModelViewSet):
     # TODO don't forget uncomment permissions!!!
     permission_classes = (TaskPermission,)
 
-    @action(methods=["get"], detail=True, url_path="complete")
+    @action(methods=["post", "delete"], detail=True, url_path="complete")
     def complete(self, request, pk=None):
         task = self.get_object()
-        task.competed = True
+        if request.method == "POST":
+            task.completed = True
+        if request.method == "DELETE":
+            task.completed = False
         task.save()
-        return Response({"messsage": "completed"}, status=200)
+        message = "set completed" if task.completed else "set uncompleted"
+        return Response({"message": message}, status=200)
 
-    @action(methods=["get"], detail=True, url_path="approve")
+    @action(methods=["post"], detail=True, url_path="approve")
     def approve(self, request, pk=None):
-        task = self.get_object()
+        task: Task = self.get_object()
+        task.approved = True
         task.end_time = timezone.now()
         task.save()
-        return Response({"messsage": "approved"}, status=200)
+        return Response({"message": "approved"}, status=200)
 
     def get_serializer_class(self):
         if self.action == "list":
+            # minimal data on "list" method
             serializer_class = TaskListSerializer
         else:
+            # more data on detail methods
             serializer_class = TaskDetailSerializer
-        # print(repr(serializer_class))
         return serializer_class
 
     def get_queryset(self):
@@ -80,9 +83,9 @@ class TaskCommentView(
 
     def setup(self, request, *args: Any, **kwargs: Any) -> None:
         return super().setup(request, *args, **kwargs)
-    
-    # def post(self, *args, **kwargs):
-    #     return self.create(*args, **kwargs)
+
+    def post(self, *args, **kwargs):
+        return self.create(*args, **kwargs)
 
     def perform_create(self, serializer):
         return serializer.save(

@@ -6,33 +6,46 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('accounts', '0001_initial'),
+        ("accounts", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='groupjoin',
-            options={'verbose_name': 'Заявка', 'verbose_name_plural': 'Заявки'},
+            name="groupjoin",
+            options={"verbose_name": "Заявка", "verbose_name_plural": "Заявки"},
         ),
         migrations.AlterModelOptions(
-            name='user',
-            options={'verbose_name': 'Пользователь', 'verbose_name_plural': 'Пользователи'},
+            name="user",
+            options={
+                "verbose_name": "Пользователь",
+                "verbose_name_plural": "Пользователи",
+            },
         ),
         migrations.AlterModelOptions(
-            name='workgroup',
-            options={'verbose_name': 'Группа', 'verbose_name_plural': 'Группы'},
+            name="workgroup",
+            options={"verbose_name": "Группа", "verbose_name_plural": "Группы"},
         ),
         migrations.AddField(
-            model_name='groupjoin',
-            name='workgroup',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.CASCADE, related_name='groupjoins', to='accounts.workgroup'),
+            model_name="groupjoin",
+            name="workgroup",
+            field=models.ForeignKey(
+                default=1,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="groupjoins",
+                to="accounts.workgroup",
+            ),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='groupjoin',
-            name='user',
-            field=models.OneToOneField(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='join', to=settings.AUTH_USER_MODEL),
+            model_name="groupjoin",
+            name="user",
+            field=models.OneToOneField(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="join",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
     ]
