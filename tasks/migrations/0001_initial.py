@@ -7,57 +7,138 @@ import tasks.models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('accounts', '0001_initial'),
+        ("accounts", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Task',
+            name="Task",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=200)),
-                ('content', models.TextField()),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Добавлено')),
-                ('start_time', models.DateTimeField(blank=True, null=True, verbose_name='Старт')),
-                ('end_time', models.DateTimeField(blank=True, null=True, verbose_name='Окончание')),
-                ('workers', models.ManyToManyField(to=settings.AUTH_USER_MODEL)),
-                ('workgroup', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='tasks', to='accounts.workgroup', verbose_name='Группа')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("title", models.CharField(max_length=200)),
+                ("content", models.TextField()),
+                (
+                    "created_at",
+                    models.DateTimeField(auto_now_add=True, verbose_name="Добавлено"),
+                ),
+                (
+                    "start_time",
+                    models.DateTimeField(blank=True, null=True, verbose_name="Старт"),
+                ),
+                (
+                    "end_time",
+                    models.DateTimeField(
+                        blank=True, null=True, verbose_name="Окончание"
+                    ),
+                ),
+                ("workers", models.ManyToManyField(to=settings.AUTH_USER_MODEL)),
+                (
+                    "workgroup",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="tasks",
+                        to="accounts.workgroup",
+                        verbose_name="Группа",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Задач',
-                'verbose_name_plural': 'Задачи',
+                "verbose_name": "Задач",
+                "verbose_name_plural": "Задачи",
             },
         ),
         migrations.CreateModel(
-            name='TaskComment',
+            name="TaskComment",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('body', models.TextField(verbose_name='содержание')),
-                ('answer_to', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='subcomments', to='tasks.taskcomment')),
-                ('sender', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='comments', to=settings.AUTH_USER_MODEL)),
-                ('task', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='comments', to='tasks.task')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("body", models.TextField(verbose_name="содержание")),
+                (
+                    "answer_to",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="subcomments",
+                        to="tasks.taskcomment",
+                    ),
+                ),
+                (
+                    "sender",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="comments",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
+                (
+                    "task",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="comments",
+                        to="tasks.task",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'коментарий',
-                'verbose_name_plural': 'коментарии',
+                "verbose_name": "коментарий",
+                "verbose_name_plural": "коментарии",
             },
         ),
         migrations.CreateModel(
-            name='TaskImage',
+            name="TaskImage",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('image', models.ImageField(upload_to=tasks.models.get_directory_path)),
-                ('comment', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='images', to='tasks.taskcomment')),
-                ('task', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='images', to='tasks.task')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("image", models.ImageField(upload_to=tasks.models.get_directory_path)),
+                (
+                    "comment",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="images",
+                        to="tasks.taskcomment",
+                    ),
+                ),
+                (
+                    "task",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="images",
+                        to="tasks.task",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Картинка',
-                'verbose_name_plural': 'Картинки',
+                "verbose_name": "Картинка",
+                "verbose_name_plural": "Картинки",
             },
         ),
     ]
