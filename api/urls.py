@@ -1,14 +1,15 @@
 from django.urls import path, include
+from rest_framework import routers
 
-# from .views import TaskListView
-from .views import router
 from . import views
 
 
+router = routers.DefaultRouter()
+router.register(r"tasks", views.TaskViewSet, basename="tasks")
+
+
 urlpatterns = [
-    path(
-        "", include(router.urls)
-    ),  # task router includes list, retrive, create, update, delete
+    path("", include(router.urls)),
     path(
         "tasks/<int:task_id>/comments/",
         views.TaskCommentView.as_view(),
@@ -16,5 +17,6 @@ urlpatterns = [
     path(
         "tasks/<int:task_id>/comments/<int:comment_id>/",
         views.TaskCommentView.as_view(),
-    ),  # retrive, update, delete Comment
+    ),  # retrieve, update, delete Comment
+    path("workgroups/", views.WorkgroupListAPIView.as_view()),
 ]

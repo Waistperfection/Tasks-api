@@ -1,16 +1,38 @@
 from rest_framework import serializers
 
-from .models import Task, TaskComment
-from accounts.serializers import UserSerializer
+from tasks.models import Task, TaskComment
+from accounts.models import User, Workgroup
 from utils.fields import PassedTimeField
+from .utils import build_related_comments_struct
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "first_name",
+            "last_name",
+            "username",
+        )
+
+    def save(self, **kwargs):
+        raise NotImplementedError
+
+
+class WorkgroupSerializer(serializers.ModelSerializer):
+    workers = UserSerializer(read_only=True, many=True)
+
+    class Meta:
+        model = Workgroup
+        fields = (
+            "id",
+            "name",
+            "workers",
+        )
 
 
 class TaskCommentSerializer(serializers.ModelSerializer):
-    """
-    Represent and serialise TaskComment model
-    here is not extra functionality added
-    """
-
     added = PassedTimeField(read_only=True)
 
     class Meta:
@@ -79,34 +101,9 @@ class TaskDetailSerializer(TaskListSerializer):
 
     # ONLY ONE LEVEL NESTED COMMENTS
     def to_representation(self, instance):
-        representation: dict = super().to_representation(instance)
+        representation = super().to_representation(instance)
         flat_comments = representation.get("comments", [])
-        flat_comments.sort(
-            key=lambda x: (-1 if x["answer_to"] is None else x["answer_to"])
-        )
-        proxy_ids = {}
-        out_comments = {
-            comment["id"]: comment
-            for comment in flat_comments
-            if comment["answer_to"] is None
-        }
-        for comment in flat_comments:
-            if comment["answer_to"] is None:
-                continue
-            if comment["answer_to"] in out_comments:
-                out_comments[comment["answer_to"]].setdefault("subcomments", []).append(
-                    comment
-                )
-                proxy_ids[comment["id"]] = comment["answer_to"]
-            else:
-                out_comments[proxy_ids[comment["answer_to"]]].setdefault(
-                    "subcomments", []
-                ).append(comment)
-                proxy_ids[comment["id"]] = proxy_ids[comment["answer_to"]]
-        representation["comments"] = flat_comments
-
-        # add workers full data to representation
-        # (including UserSerializer in class prevent add workers by pk)
+        representation["comments"] = build_related_comments_struct(flat_comments)
         workers = UserSerializer(instance.workers.all(), many=True).data
         representation["workers"] = workers
         return representation

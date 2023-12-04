@@ -15,7 +15,8 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # restapi
+    "django.contrib.humanize",
+
     "rest_framework",
     # authentication
     "rest_framework.authtoken",
@@ -29,6 +30,7 @@ INSTALLED_APPS = [
     # my apps
     "accounts.apps.AccountsConfig",
     "tasks.apps.TasksConfig",
+    "api",
 ]
 
 MIDDLEWARE = [

@@ -7,7 +7,7 @@ class TaskCommentInline(admin.TabularInline):
     model = TaskComment
 
 
-class SubcommentsInlie(admin.TabularInline):
+class SubcommentsInline(admin.TabularInline):
     model = TaskComment
 
 
@@ -33,7 +33,7 @@ class TaskAdmin(admin.ModelAdmin):
 @admin.register(TaskComment)
 class TaskCommentAdmin(admin.ModelAdmin):
     inlines = [
-        SubcommentsInlie,
+        SubcommentsInline,
     ]
     ...
 

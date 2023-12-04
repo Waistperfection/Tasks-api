@@ -10,8 +10,7 @@ urlpatterns = [
     path("api/v1/drf_auth/", include("rest_framework.urls")),
     re_path(r"^auth/", include("djoser.urls")),
     re_path(r"^auth/", include("djoser.urls.authtoken")),
-    path("api/v1/", include("tasks.urls")),
-    path("api/v1/", include("accounts.urls")),
+    path("api/v1/", include("api.urls")),
 ]
 
 
