@@ -1,4 +1,4 @@
-from django.urls import path, include
+from django.urls import path
 from rest_framework import routers
 
 from . import views
@@ -9,7 +9,6 @@ router.register(r"tasks", views.TaskViewSet, basename="tasks")
 
 
 urlpatterns = [
-    path("", include(router.urls)),
     path(
         "tasks/<int:task_id>/comments/",
         views.TaskCommentView.as_view(),
@@ -20,3 +19,5 @@ urlpatterns = [
     ),  # retrieve, update, delete Comment
     path("workgroups/", views.WorkgroupListAPIView.as_view()),
 ]
+
+urlpatterns.extend(router.urls)
