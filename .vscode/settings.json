@@ -2,4 +2,5 @@
     "cmake.configureOnOpen": false,
     "search.useIgnoreFiles": false,
     "python.analysis.autoImportCompletions": true
+    
 }

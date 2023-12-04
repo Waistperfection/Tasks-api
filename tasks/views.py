@@ -53,10 +53,10 @@ class TaskViewSet(viewsets.ModelViewSet):
         queryset = Task.objects.select_related("workgroup").prefetch_related("workers")
         # if user.is_master return tasks for all master workgroups
         # master can have more than one workgroup
-        if self.request.user.is_master:
+        if self.request.user.is_master:  # type: ignore
             queryset = queryset.filter(
-                Q(workgroup__owner_id=self.request.user.id)
-                | Q(workgroup__id=self.request.user.workgroup_id)
+                Q(workgroup__owner_id=self.request.user.id)  # type: ignore
+                | Q(workgroup__id=self.request.user.workgroup_id)  # type: ignore
             )
         # else if user is worker return task
         # worker can have only one workgroup
@@ -89,7 +89,8 @@ class TaskCommentView(
 
     def perform_create(self, serializer):
         return serializer.save(
-            task_id=self.kwargs["task_id"], sender_id=self.request.user.id
+            task_id=self.kwargs["task_id"],
+            sender_id=self.request.user.id,  # type:ignore
         )
 
     def get_queryset(self):

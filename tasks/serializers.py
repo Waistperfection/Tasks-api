@@ -32,10 +32,6 @@ class TaskCommentSerializer(serializers.ModelSerializer):
 
 
 class TaskListSerializer(serializers.ModelSerializer):
-    """
-    list serialiser to Task model
-    """
-
     created_at = serializers.DateTimeField(read_only=True)
     workgroup_name = serializers.CharField(source="workgroup.name", read_only=True)
 
@@ -54,10 +50,6 @@ class TaskListSerializer(serializers.ModelSerializer):
 
 
 class TaskDetailSerializer(TaskListSerializer):
-    """
-    Detail serializer to Task model, include related comments and workgroup
-    """
-
     comments = TaskCommentSerializer(many=True, read_only=True)
     workgroup_name = serializers.CharField(source="workgroup.name", read_only=True)
 
@@ -92,7 +84,6 @@ class TaskDetailSerializer(TaskListSerializer):
         flat_comments.sort(
             key=lambda x: (-1 if x["answer_to"] is None else x["answer_to"])
         )
-        print(flat_comments)
         proxy_ids = {}
         out_comments = {
             comment["id"]: comment
@@ -115,7 +106,7 @@ class TaskDetailSerializer(TaskListSerializer):
         representation["comments"] = flat_comments
 
         # add workers full data to representation
-        # (including UserSerializer in class prevernt add workers by pk)
+        # (including UserSerializer in class prevent add workers by pk)
         workers = UserSerializer(instance.workers.all(), many=True).data
         representation["workers"] = workers
         return representation
