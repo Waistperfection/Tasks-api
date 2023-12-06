@@ -22,12 +22,14 @@ class UserSerializer(serializers.ModelSerializer):
 
 class WorkgroupSerializer(serializers.ModelSerializer):
     workers = UserSerializer(read_only=True, many=True)
+    owner = UserSerializer(read_only=True)
 
     class Meta:
         model = Workgroup
         fields = (
             "id",
             "name",
+            "owner",
             "workers",
         )
 
@@ -56,6 +58,7 @@ class TaskCommentSerializer(serializers.ModelSerializer):
 class TaskListSerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(read_only=True)
     workgroup_name = serializers.CharField(source="workgroup.name", read_only=True)
+    workers = UserSerializer(many=True)
 
     class Meta:
         model = Task
@@ -71,9 +74,11 @@ class TaskListSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "title", "content", "created_at")
 
 
-class TaskDetailSerializer(TaskListSerializer):
+class TaskDetailSerializer(serializers.ModelSerializer):
+    workers = UserSerializer(many=True)
     comments = TaskCommentSerializer(many=True, read_only=True)
-    workgroup_name = serializers.CharField(source="workgroup.name", read_only=True)
+    workgroup_id = serializers.IntegerField()
+    workgroup_name = serializers.CharField(source="workgroup.name")
 
     class Meta:
         model = Task
@@ -85,11 +90,12 @@ class TaskDetailSerializer(TaskListSerializer):
             "end_time",
             "completed",
             "approved",
-            "workgroup",
+            "workgroup_id",
             "workgroup_name",
             "workers",
             "comments",
         )
+
         allow_empty = ("workers",)
         read_only_fields = (
             "id",
@@ -104,6 +110,15 @@ class TaskDetailSerializer(TaskListSerializer):
         representation = super().to_representation(instance)
         flat_comments = representation.get("comments", [])
         representation["comments"] = build_related_comments_struct(flat_comments)
-        workers = UserSerializer(instance.workers.all(), many=True).data
-        representation["workers"] = workers
+
         return representation
+
+    def validate(self, attrs):
+        user = self.context["request"].user
+        workgroup = attrs["workgroup"]
+        workers = attrs["workers"]
+        if user is not workgroup.owner:
+            raise serializers.ValidationError('You can add tasks only in your groups')
+        elif not set(workers).issubset(set(workgroup.workers.all())):
+            raise serializers.ValidationError('You can add only related with workgroup workers')
+        return super().validate(attrs)

@@ -3,7 +3,6 @@ def build_related_comments_struct(comments: list[dict]) -> list[dict]:
             key=lambda x: (-1 if x["answer_to"] is None else x["answer_to"])
         )
     proxy_ids = {}  # to represent relations of every comment to mother model
-
     out_comments = {
         comment["id"]: comment
         for comment in comments

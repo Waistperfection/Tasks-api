@@ -1,0 +1,34 @@
+TODO
+
+* write tests to Task and Comment check permissions and CRUD
+
+* update model User workgroup not required!!!
+
+* to master CRUD workgroup add users, to user add to workgroup (use Groupjoin model)
+
+* good luck!!!
+
+
+viewset workgroup
+    create - master
+    list - authenticaed
+    <int:pk>
+    add user -master
+    join - authenticated
+    join[delete] - group_worker
+
+workgroup
+ id
+ name
+ owner
+ workers []
+
+workflow
+user register => 
+request to become master => 
+create workgroup => 
+    add workers from registered(generate invite link)
+    add workers by invite new user(generate invite link)
+    delete workers from workgroup
+    automatically clear old invites
+    

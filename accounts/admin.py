@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as StockUserAdmin
 from django.utils.translation import gettext_lazy as _
 
-from .models import User, Workgroup, Groupjoin
+from .models import User, Workgroup
 
 
 @admin.register(User)
@@ -25,9 +25,4 @@ class UserAdmin(StockUserAdmin):
 
 @admin.register(Workgroup)
 class WorkgroupAdmin(admin.ModelAdmin):
-    ...
-
-
-@admin.register(Groupjoin)
-class GroupjoinAdmin(admin.ModelAdmin):
     ...
