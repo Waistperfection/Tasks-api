@@ -1,0 +1,65 @@
+[
+    {
+        "username": "vlas",
+        "email": "vlas@mail.ru",
+        "first_name": "vlas",
+        "last_name": "klyuchin",
+        "password": "loki45"
+    },
+    {
+        "username": "volodya",
+        "email": "volodya@mail.ru",
+        "first_name": "volodya",
+        "last_name": "scladchikov",
+        "password": "loki45"
+    },
+    {
+        "username": "anton",
+        "email": "anton@mail.ru",
+        "first_name": "anton",
+        "last_name": "sabodash",
+        "password": "loki45"
+    },
+    {
+        "username": "ivan",
+        "email": "ivan@mail.ru",
+        "first_name": "petrovich",
+        "last_name": "ulanov",
+        "password": "loki45"
+    },
+    {
+        "username": "pavel",
+        "email": "pavel@mail.ru",
+        "first_name": "pavel",
+        "last_name": "kocherov",
+        "password": "loki45"
+    },
+    {
+        "username": "vasiliy",
+        "email": "vasiliy@mail.ru",
+        "first_name": "vasiliy",
+        "last_name": "pupkin",
+        "password": "loki45"
+    },
+    {
+        "username": "raim",
+        "email": "raim@mail.ru",
+        "first_name": "raim",
+        "last_name": "raimov",
+        "password": "loki45"
+    },
+    {
+        "username": "ibragim",
+        "email": "ibragim@mail.ru",
+        "first_name": "ibragim",
+        "last_name": "kandebober",
+        "password": "loki45"
+    },
+    {
+        "username": "rustam",
+        "email": "rustam@mail.ru",
+        "first_name": "rustam",
+        "last_name": "upyachkin",
+        "password": "loki45"
+    }
+]

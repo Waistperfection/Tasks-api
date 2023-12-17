@@ -1,7 +1,0 @@
-* correct workers in TaskDetaioView because frontend can't provide master username to comments(without one more request)
-
-* test mechanics in TaskCRUD and CommentCRUD and go to frontend
-
-* refactor code to api standarts like FOODGRAMM in github
-
-* goodluck!!!

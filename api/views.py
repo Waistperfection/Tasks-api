@@ -1,20 +1,23 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, mixins
 from rest_framework import generics
 from rest_framework.response import Response
-from django.db.models import Q
+from django.db.models import Q, F, Prefetch
 from rest_framework.decorators import action
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
 
 from . import serializers
-from .permissions import TaskPermission
-from accounts.models import Workgroup
+from .permissions import GroupTaskPermission
+from accounts.models import Workgroup, User
 from tasks.models import Task, TaskComment
 
 
 class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.TaskListSerializer
-    permission_classes = (TaskPermission,)
+    permission_classes = (
+        IsAuthenticated,
+        GroupTaskPermission,
+    )
 
     @action(methods=["post", "delete"], detail=True, url_path="complete")
     def complete(self, request, pk=None):
@@ -45,19 +48,26 @@ class TaskViewSet(viewsets.ModelViewSet):
         return serializer_class
 
     def get_queryset(self):
+        user = self.request.user
         # get base queryset
-        queryset = Task.objects.select_related("workgroup").prefetch_related("workers")
-        # if user.is_master return tasks for all master workgroups
-        # master can have more than one workgroup
-        if self.request.user.is_master:  # type: ignore
+        prefetch_query = User.objects.all().only(
+            "id", "first_name", "last_name", "username"
+        )
+        queryset = Task.objects.select_related("workgroup").prefetch_related(
+            Prefetch("workers", prefetch_query)
+        )
+        # If user.is_master return tasks for all master workgroups
+        if user.is_master:  # type: ignore
             queryset = queryset.filter(
-                Q(workgroup__owner_id=self.request.user.id)  # type: ignore
-                | Q(workgroup__id=self.request.user.workgroup_id)  # type: ignore
+                Q(workgroup__owner_id=user.id)  # type: ignore
+                | Q(workgroup__id=user.workgroup_id)  # type: ignore
             )
-        # else if user is worker return task
-        # worker can have only one workgroup
+        # else if user is worker return tasks from his group
         else:
-            queryset = Task.objects.filter(workers=self.request.user)
+            # only user tasks
+            # queryset = queryset.filter(workers=user.id)
+            # all workgroup tasks
+            queryset = queryset.filter(workgroup__id=user.workgroup_id)
         # if get return detail view of task we wanna add some extra objects to serializer
         # like recursive comments
         if self.action == "retrieve":
@@ -71,6 +81,7 @@ class TaskCommentView(
 ):
     serializer_class = serializers.TaskCommentSerializer
     lookup_url_kwarg = "comment_id"
+    permission_classes = [IsAuthenticated,]
 
     def post(self, *args, **kwargs):
         return self.create(*args, **kwargs)
@@ -88,16 +99,46 @@ class TaskCommentView(
         return queryset
 
 
-class WorkgroupListAPIView(generics.ListAPIView):
+class WorkgroupViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
     serializer_class = serializers.WorkgroupSerializer
-    queryset = Workgroup.objects.prefetch_related("workers")
-    permission_classes = (IsAuthenticated,)
+    permission_classes = [
+        IsAuthenticated,
+        GroupTaskPermission,
+    ]
+    lookup_field = "pk"
+
+    @action(methods=["post"], detail=False)
+    def add(self, request):
+        ...
+
+    @action(methods=["get", "post", "delete"], detail=False)
+    def join(self, request):
+        if request.method == "GET":
+            ...
 
     def get_queryset(self):
-        queryset = (
-            Workgroup.objects.prefetch_related("workers")
-            .filter(Q(owner=self.request.user) | Q(workers__id=self.request.user.id))  # type:ignore
-            .distinct()
-            .all()
+        prefetch_query = User.objects.all().only(
+            "id", "first_name", "last_name", "username", "workgroup_id"
         )
+        if self.action == "list":
+            queryset = (
+                Workgroup.objects
+                .select_related('owner')
+                .prefetch_related(Prefetch(
+                    "workers", queryset=prefetch_query)
+                )
+                .filter(
+                    Q(owner=self.request.user) | Q(workers__id=self.request.user.id)
+                )  # type:ignore
+                .distinct()
+                .all()
+            )
+        else:
+            queryset = Workgroup.objects.all()
         return queryset

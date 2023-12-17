@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
@@ -8,19 +9,20 @@ class User(AbstractUser):
         "accounts.Workgroup",
         null=True,
         related_name="workers",
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        blank=True,
     )
 
     class Meta:
         verbose_name = "Пользователь"
-        verbose_name_plural = "Пользователи"
+        verbose_name_plural = "Пользоватеworkли"
 
     def __str__(self):
         return self.username
 
 
 class Workgroup(models.Model):
-    name = models.CharField(max_length=150)
+    name = models.CharField(max_length=150, unique=True)
     owner = models.ForeignKey(
         "accounts.User", on_delete=models.SET_NULL, related_name="workgroups", null=True
     )
@@ -33,17 +35,10 @@ class Workgroup(models.Model):
         return self.name
 
 
-class Groupjoin(models.Model):
-    user = models.OneToOneField(
-        "accounts.User", related_name="join", on_delete=models.CASCADE
-    )
-    workgroup = models.ForeignKey(
-        "accounts.Workgroup", related_name="groupjoins", on_delete=models.CASCADE
-    )
+class Invite(models.Model):
+    workgroup = models.ForeignKey(Workgroup, related_name='group_invites', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
+    code = models.UUIDField(default=uuid.uuid4)
 
     class Meta:
-        verbose_name = "Заявка"
-        verbose_name_plural = "Заявки"
-
-    def __str__(self):
-        return f"Заявка от {self.user.username} на вступление в {self.workgroup.name}"
+        ...

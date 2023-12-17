@@ -6,7 +6,7 @@ from . import views
 
 router = routers.DefaultRouter()
 router.register(r"tasks", views.TaskViewSet, basename="tasks")
-
+router.register(r"workgroups", views.WorkgroupViewSet, basename="workgroups")
 
 urlpatterns = [
     path(
@@ -17,7 +17,7 @@ urlpatterns = [
         "tasks/<int:task_id>/comments/<int:comment_id>/",
         views.TaskCommentView.as_view(),
     ),  # retrieve, update, delete Comment
-    path("workgroups/", views.WorkgroupListAPIView.as_view()),
+    # path("workgroups/", views.WorkgroupListAPIView.as_view()),
 ]
 
 urlpatterns.extend(router.urls)
