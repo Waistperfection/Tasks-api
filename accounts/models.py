@@ -1,3 +1,4 @@
+from ntpath import realpath
 import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -35,10 +36,33 @@ class Workgroup(models.Model):
         return self.name
 
 
-class Invite(models.Model):
-    workgroup = models.ForeignKey(Workgroup, related_name='group_invites', on_delete=models.CASCADE)
+class GroupInvite(models.Model):
+    workgroup = models.ForeignKey(
+        Workgroup, related_name="group_invites", on_delete=models.CASCADE
+    )
     user = models.ForeignKey(User, on_delete=models.CASCADE, blank=True, null=True)
     code = models.UUIDField(default=uuid.uuid4)
 
     class Meta:
         ...
+
+    def __str__(self):
+        return f"{self.workgroup.name}:{self.user.username}"
+
+
+class GroupJoin(models.Model):
+    workgroup = models.ForeignKey(
+        Workgroup, on_delete=models.CASCADE, related_name="joins"
+    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="joins")
+
+    class Meta:
+        ...
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.refresh_from_db()
+        GroupJoin.objects.all().filter(user_id=self.user.id).exclude(
+            pk=self.pk
+        ).delete()
+        print("all other deleted")

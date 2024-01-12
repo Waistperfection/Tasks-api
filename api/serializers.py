@@ -1,9 +1,13 @@
+import uuid
 from rest_framework import serializers
+from django.contrib.auth import get_user_model
 
 from tasks.models import Task, TaskComment
-from accounts.models import User, Workgroup
+from accounts.models import GroupInvite, Workgroup
 from utils.fields import PassedTimeField
 from .utils import build_related_comments_struct
+
+User = get_user_model()
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -14,15 +18,28 @@ class UserSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "username",
+            "workgroup",
         )
 
     def save(self, **kwargs):
         raise NotImplementedError
 
 
+class CurrentUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "is_master",
+            "workgroup_id",
+        )
+
+
 class WorkgroupSerializer(serializers.ModelSerializer):
-    workers = UserSerializer(read_only=True, many=True)
-    owner = UserSerializer(read_only=True)
+    owner = serializers.HiddenField(default=serializers.CurrentUserDefault())
 
     class Meta:
         model = Workgroup
@@ -32,6 +49,25 @@ class WorkgroupSerializer(serializers.ModelSerializer):
             "owner",
             "workers",
         )
+        extra_kwargs = {"workers": {"required": False}}
+
+
+class WorkgroupListSerializer(WorkgroupSerializer):
+    workers = UserSerializer(read_only=True, many=True)
+    owner = UserSerializer()
+
+    class Meta:
+        model = Workgroup
+        fields = (
+            "id",
+            "name",
+            "owner",
+            "workers",
+        )
+
+
+class WorkgroupDetailsSerializer(WorkgroupSerializer):
+    ...
 
 
 class TaskCommentSerializer(serializers.ModelSerializer):
@@ -55,7 +91,13 @@ class TaskCommentSerializer(serializers.ModelSerializer):
         )
 
 
-class TaskListSerializer(serializers.ModelSerializer):
+class TaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Task
+        fields = ("id", "title", "workgroup", "content", "workers")
+
+
+class TaskListSerializer(TaskSerializer):
     created_at = serializers.DateTimeField(read_only=True)
     workgroup_name = serializers.CharField(source="workgroup.name", read_only=True)
     workers = UserSerializer(many=True)
@@ -66,7 +108,7 @@ class TaskListSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "content",
-            "workgroup_id",
+            "workgroup",
             "workgroup_name",
             "created_at",
             "workers",
@@ -74,10 +116,10 @@ class TaskListSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "title", "content", "created_at")
 
 
-class TaskDetailSerializer(serializers.ModelSerializer):
+class TaskDetailSerializer(TaskListSerializer):
     workers = UserSerializer(many=True)
     comments = TaskCommentSerializer(many=True, read_only=True)
-    workgroup_id = serializers.IntegerField()
+    workgroup = serializers.PrimaryKeyRelatedField(read_only=True)
     workgroup_name = serializers.CharField(source="workgroup.name")
 
     class Meta:
@@ -90,7 +132,7 @@ class TaskDetailSerializer(serializers.ModelSerializer):
             "end_time",
             "completed",
             "approved",
-            "workgroup_id",
+            "workgroup",
             "workgroup_name",
             "workers",
             "comments",
@@ -118,7 +160,46 @@ class TaskDetailSerializer(serializers.ModelSerializer):
         workgroup = attrs["workgroup"]
         workers = attrs["workers"]
         if user is not workgroup.owner:
-            raise serializers.ValidationError('You can add tasks only in your groups')
+            raise serializers.ValidationError("You can add tasks only in your groups")
         elif not set(workers).issubset(set(workgroup.workers.all())):
-            raise serializers.ValidationError('You can add only related with workgroup workers')
+            raise serializers.ValidationError(
+                "You can add only related with workgroup workers"
+            )
         return super().validate(attrs)
+
+
+class WorkgroupInviteAddSerializer(serializers.ModelSerializer):
+    code = serializers.UUIDField(default=uuid.uuid4, read_only=True)
+
+    class Meta:
+        model = GroupInvite
+        fields = (
+            "code",
+            "user",
+            "workgroup",
+        )
+
+    def validate_user(self, user):
+        if not (user.workgroup is None):
+            raise serializers.ValidationError("You can add only free users")
+        return user
+
+    def validate_workgroup(self, workgroup):
+        user = self.context["request"].user
+        if not (user == workgroup.owner):
+            raise serializers.ValidationError("You cant add users in this group")
+        return workgroup
+
+
+class WorkgroupInviteListSerializer(WorkgroupInviteAddSerializer):
+    user = UserSerializer()
+    workgroup = serializers.CharField(source="workgroup.name")
+
+    class Meta:
+        model = GroupInvite
+        fields = (
+            "id",
+            "code",
+            "user",
+            "workgroup",
+        )

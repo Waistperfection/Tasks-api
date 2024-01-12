@@ -1,15 +1,19 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, mixins
 from rest_framework import generics
+from rest_framework import status
 from rest_framework.response import Response
 from django.db.models import Q, F, Prefetch
 from rest_framework.decorators import action
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
-
+from django.contrib.auth import get_user_model
 from . import serializers
-from .permissions import GroupTaskPermission
-from accounts.models import Workgroup, User
+from .permissions import GroupTaskPermission, OnlyMasterPermission
+from accounts.models import GroupInvite, Workgroup, User
 from tasks.models import Task, TaskComment
+
+User = get_user_model()
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -28,7 +32,7 @@ class TaskViewSet(viewsets.ModelViewSet):
             task.completed = False
         task.save()
         message = "set completed" if task.completed else "set uncompleted"
-        return Response({"message": message}, status=200)
+        return Response({"message": message}, status=status.HTTP_200_OK)
 
     @action(methods=["post"], detail=True, url_path="approve")
     def approve(self, request, pk=None):
@@ -36,12 +40,17 @@ class TaskViewSet(viewsets.ModelViewSet):
         task.approved = True
         task.end_time = timezone.now()
         task.save()
-        return Response({"message": "approved"}, status=200)
+        return Response({"message": "approved"}, status=status.HTTP_200_OK)
 
     def get_serializer_class(self):
         if self.action == "list":
             # minimal data on "list" method
             serializer_class = serializers.TaskListSerializer
+        elif self.action in (
+            "create",
+            "update",
+        ):
+            serializer_class = serializers.TaskSerializer
         else:
             # more data on detail methods
             serializer_class = serializers.TaskDetailSerializer
@@ -81,7 +90,9 @@ class TaskCommentView(
 ):
     serializer_class = serializers.TaskCommentSerializer
     lookup_url_kwarg = "comment_id"
-    permission_classes = [IsAuthenticated,]
+    permission_classes = [
+        IsAuthenticated,
+    ]
 
     def post(self, *args, **kwargs):
         return self.create(*args, **kwargs)
@@ -99,13 +110,8 @@ class TaskCommentView(
         return queryset
 
 
-class WorkgroupViewSet(
-    mixins.ListModelMixin,
-    mixins.RetrieveModelMixin,
-    mixins.CreateModelMixin,
-    mixins.DestroyModelMixin,
-    viewsets.GenericViewSet,
-):
+# TODO: update queries in viewsets!!! too much duplication
+class WorkgroupViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.WorkgroupSerializer
     permission_classes = [
         IsAuthenticated,
@@ -113,32 +119,92 @@ class WorkgroupViewSet(
     ]
     lookup_field = "pk"
 
-    @action(methods=["post"], detail=False)
-    def add(self, request):
-        ...
+    @action(
+        methods=["post"],
+        detail=True,
+        permission_classes=[
+            OnlyMasterPermission,
+        ],
+    )
+    def add(self, request, pk):
+        # data {user_id} permission - workgroup owner
+        # result - new inite to user with invite link
+        # send email to user
+        # chrck user is master>>get data>>get user or 404>>get workgroup>>check owner>>create invite link>>
+        # >>send link to email
 
-    @action(methods=["get", "post", "delete"], detail=False)
+        workgroup = self.get_object()
+        invite = serializers.WorkgroupInviteAddSerializer(
+            data=request.data, context=self.get_serializer_context()
+        )
+        print(invite.is_valid(raise_exception=True))
+        print(invite.validated_data)
+        invite.save()
+        return Response({"data": invite.data}, status=status.HTTP_200_OK)
+
+    @action(methods=["post", "delete"], detail=False)
     def join(self, request):
-        if request.method == "GET":
+        # join to workgroup for non_moaster users
+        if request.method == "POST":
             ...
 
     def get_queryset(self):
         prefetch_query = User.objects.all().only(
             "id", "first_name", "last_name", "username", "workgroup_id"
         )
-        if self.action == "list":
-            queryset = (
-                Workgroup.objects
-                .select_related('owner')
-                .prefetch_related(Prefetch(
-                    "workers", queryset=prefetch_query)
-                )
-                .filter(
-                    Q(owner=self.request.user) | Q(workers__id=self.request.user.id)
-                )  # type:ignore
-                .distinct()
-                .all()
-            )
-        else:
-            queryset = Workgroup.objects.all()
+        queryset = (
+            Workgroup.objects.select_related("owner")
+            .prefetch_related(Prefetch("workers", queryset=prefetch_query))
+            .distinct()
+            .all()
+        )
+        if self.request.user.is_master or self.request.user.workgroup:
+            queryset = queryset.filter(
+                Q(owner=self.request.user) | Q(workers__id=self.request.user.id)
+            )  # type:ignore
         return queryset
+
+    def get_serializer_class(self):
+        if self.action in ("create", "update"):
+            return serializers.WorkgroupSerializer
+        elif self.action == "add":
+            return serializers.WorkgroupInviteAddSerializer
+        return serializers.WorkgroupListSerializer
+
+
+class InviteViewSet(
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.DestroyModelMixin,
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet,
+):
+    model = GroupInvite
+    # serializer_class = serializers.WorkgroupInviteSerializer
+    queryset = GroupInvite.objects.all()
+    lookup_field = "code"
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return serializers.WorkgroupInviteListSerializer
+        return serializers.WorkgroupInviteAddSerializer
+
+    @action(
+        methods=["get"],
+        detail=True,
+    )
+    def accept(self, request, *args):
+        instance = self.get_object()
+        user = request.user
+        if not instance.user == user:
+            return Response(
+                {"message": "not yours invite code"}, status=status.HTTP_403_FORBIDDEN
+            )
+        user.worgroup = instance.workgroup
+        user.save()
+        return Response({"message": "success"}, status=status.HTTP_202_ACCEPTED)
+
+
+class FreeWorkersListApiView(generics.ListAPIView):
+    queryset = User.objects.filter(workgroup=None)
+    serializer_class = serializers.UserSerializer
