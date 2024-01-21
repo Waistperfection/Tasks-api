@@ -1,9 +1,7 @@
 from rest_framework import permissions
 
 
-
 class GroupTaskPermission(permissions.IsAuthenticated):
-
     def has_permission(self, request, view):
         user = request.user
         if view.action == "create" and not user.is_master:
@@ -26,7 +24,7 @@ class GroupTaskPermission(permissions.IsAuthenticated):
         else:
             return True
 
-class OnlyMasterPermission(permissions.IsAuthenticated):
 
+class OnlyMasterPermission(permissions.IsAuthenticated):
     def has_permission(self, request, view):
         return super().has_permission(request, view) and request.user.is_master

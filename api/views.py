@@ -13,6 +13,8 @@ from .permissions import GroupTaskPermission, OnlyMasterPermission
 from accounts.models import GroupInvite, Workgroup, User
 from tasks.models import Task, TaskComment
 
+from api import permissions
+
 User = get_user_model()
 
 
@@ -181,8 +183,20 @@ class InviteViewSet(
 ):
     model = GroupInvite
     # serializer_class = serializers.WorkgroupInviteSerializer
-    queryset = GroupInvite.objects.all()
+    # queryset = GroupInvite.objects.all()
     lookup_field = "code"
+    permission_classes = [
+        permissions.permissions.IsAuthenticated,
+    ]
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = GroupInvite.objects.select_related("workgroup")
+        if user.is_master:
+            queryset = queryset.filter(workgroup__owner_id=user.id)
+        else:
+            queryset = queryset.filter(user_id=user.id)
+        return queryset
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -193,18 +207,18 @@ class InviteViewSet(
         methods=["get"],
         detail=True,
     )
-    def accept(self, request, *args):
+    def accept(self, request, *args, **kwargs):
         instance = self.get_object()
         user = request.user
-        if not instance.user == user:
+        if instance.user != user:
             return Response(
                 {"message": "not yours invite code"}, status=status.HTTP_403_FORBIDDEN
             )
-        user.worgroup = instance.workgroup
+        user.workgroup = instance.workgroup
         user.save()
-        return Response({"message": "success"}, status=status.HTTP_202_ACCEPTED)
+        return Response({"message": "success, you're added to group %s"}, status=status.HTTP_202_ACCEPTED)
 
 
 class FreeWorkersListApiView(generics.ListAPIView):
-    queryset = User.objects.filter(workgroup=None)
+    queryset = User.objects.filter(workgroup=None, is_master=False)
     serializer_class = serializers.UserSerializer
